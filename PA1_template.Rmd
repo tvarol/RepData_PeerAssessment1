@@ -1,25 +1,151 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author: "Tulin Varol"
+date: "9/7/2017"
 output: 
   html_document:
     keep_md: true
 ---
 
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=8, echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+This document includes the assignment for Week 2 of the Coursera course "Reproducible Research".
+This assignment makes use of data from a personal activity monitoring device. 
+This device collects data at 5 minute intervals through out the day. 
+The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+The variables included in this dataset are:
+
+*  **steps**: Number of steps taking in a 5-minute interval (missing values are coded as NA)  
+*  **date**: The date on which the measurement was taken in YYYY-MM-DD format  
+*  **interval**: Identifier for the 5-minute interval in which measurement was taken
 
 ## Loading and preprocessing the data
+The data exists as a zip file. Firstly, check if the data is unzipped already. If not, then unzip the data
+and delete the existing zip file. After read the data with read.csv().
+```{r readdata}
+if(!file.exists("activity.csv")){
+    unzip("activity.zip")       
+    file.remove("activity.zip")
+}
+data <- read.csv("activity.csv")
+```
+Let's have a quick look at the data.
+```{r checkdata}
+str(data)
+```
+As you see, there are 17568 observables and 3 variables (steps, date, interval). Let's have a more detailed look.
 
+```{r datasummary}
+summary(data)
+```
 
+We now have a bit more information. There are 2304 missing values labelled as NA.
+There are 288 measurements for each day. Notice that each interval period is 5 minutes so 288*5=1440 minutes give the number of minutes in a day. The maximum number of steps taken in a day is 806, etc..
+
+Now, let's convert the date given in this dataset to another type since that would be useful in the future. 
+```{r convertdate}
+data$date <- as.Date(data$date, format = "%Y-%m-%d")
+```
 
 ## What is mean total number of steps taken per day?
+Let's first calculate the total number of steps taken per day. There are many ways to do it but here tapply function from dplyr package will be used. Thus, the first step is to load the package.
 
+```{r totalsteps}
+library(dplyr)
+totalSteps <- tapply(data$steps, data$date, sum)
+head(totalSteps)
+```
+This can be visualized by plotting the histogram of the total number of steps taken each day. 
+```{r histTotalSteps}
+hist(totalSteps, main="Total Number of Steps per Day", xlab="Total Number of Steps", col="grey")
+```
 
+Let's look at the mean and median number of steps taken each day. In order to have sensible results, NAs will be removed.
+```{r mean}
+mean(totalSteps, na.rm =TRUE)
+median(totalSteps, na.rm =TRUE)
+```
+
+So the mean number of steps taken per day is 10766 and the median is 10765.
 
 ## What is the average daily activity pattern?
+Now in order to see the average daily activity pattern, the 5 min interval vs the average number of steps taken will be plotted.
 
+```{r averageStepsPerInterval}
+aveInterval <- tapply(data$steps, data$interval, mean, na.rm=TRUE)
+head(aveInterval)
+plot(as.numeric(as.character(names(aveInterval))), as.numeric(as.character(aveInterval)), 
+     type="l",
+     xlab="Time Interval", 
+     ylab="Average Number of Steps", 
+     main="Average Number of Steps per Time Interval",
+     xaxt="n")
+axis(1, at = seq(0, 2400, by = 600), labels = c("00:00","06:00","12:00","18:00","24:00"))
+abline(v=names(aveInterval)[which.max(aveInterval)], col="red", lty="dotted", lwd=2)
+text(x = names(aveInterval)[which.max(aveInterval)-7], y = 20, "08:35", srt = 90, col = "red")
+names(aveInterval)[which.max(aveInterval)]
+max(aveInterval)
+```
 
+On average across all the days in the dataset, the time interval of 835 contains the maximum number of steps. That corresponds to 8:35 AM (shown by red line on the plot) when people take maximum number of steps, 206 steps on average, each day. 
 
 ## Imputing missing values
+As we see before, there are many NAs in this dataset. To remind you again:
 
+```{r summary}
+summary(data)
+```
 
+There are total of 2304 missing values in this dataset. There may be different ways of replacing these missing values by something meaningful. Here, they will be replaced by the mean number of steps for that given time interval across the other days. Now, we'll create a new dataset which will be equal to the original dataset but with the missing data filled in.
+
+```{r fillNA}
+imputedData <- data %>% mutate(day = weekdays(date)) %>% group_by(interval, day) %>% mutate(steps = replace(steps, is.na(steps), mean(steps, na.rm = TRUE)))
+head(imputedData)
+```
+
+Since now we replaced the missing values, let's calculate the mean and median total number of steps taken per day.
+
+```{r newtotalsteps}
+newTotalSteps <- tapply(imputedData$steps, imputedData$date, sum)
+mean(newTotalSteps, na.rm =TRUE)
+median(newTotalSteps, na.rm =TRUE)
+```
+
+New mean and median values are 10821 and 11015, respectively. These values were 10766 and 10765 when NAs were removed. The difference is not too big. Now let's visualize this and check the histogram for total number of steps taken per day. 
+
+```{r histTotalStepsImputed}
+hist(newTotalSteps, xlab="Total Number of Steps", border="red", main=NA)
+hist(totalSteps, xlab="Total Number of Steps", main=NA, border="black", add=TRUE)
+title("Total Number of Steps per Day", line = 2)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Let's create a new column in the imputed dataset with two levels - "weekday" and "weekend" indicating whether a given day is a weekday or weekend day.
+```{r weekday}
+library(lubridate)
+imputedData$week <- factor(ifelse(wday(imputedData$date, label=TRUE) %in% c("Sat", "Sun"),"weekend","weekday"))
+head(imputedData)
+```
+Now we'll make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+```{r averageStepsPerIntervalWD}
+aveIntervalWD <- summarise(group_by(imputedData,interval,week), mean(steps))
+aveIntervalWD <- as.data.frame(aveIntervalWD)
+names(aveIntervalWD) = c("interval", "week", "ave.steps")
+head(aveIntervalWD)
+
+library(lattice)
+xyplot(ave.steps~interval | week, data = aveIntervalWD,
+     type="l",
+     xlab="Time Interval", 
+     ylab="Average Number of Steps", 
+     main="Average Number of Steps per Time Interval",
+     strip=FALSE,
+     layout = c(1,2),
+     scales=list(x=list(at = seq(0, 2400, by = 600), labels = c("00:00","06:00","12:00","18:00","24:00"))))
+```
+
+There are apparently some differences in activity patterns between weekdays and weekends. Considering most people are going to school or work around 8:30-9:00 AM during weekdays, it's not surprising to see that the maximum number of total steps was taken around this time. However, during weekends, people can go for a walk at any time in a day so we have a more homogenous distribution for weekends.
