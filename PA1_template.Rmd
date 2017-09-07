@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=10, fig.height=8, echo=TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(fig.width=10, fig.height=8, fig.path='figures/', echo=TRUE, warning=FALSE, message=FALSE)
 ```
 
 This document includes the assignment for Week 2 of the Coursera course "Reproducible Research".

@@ -85,7 +85,7 @@ This can be visualized by plotting the histogram of the total number of steps ta
 hist(totalSteps, main="Total Number of Steps per Day", xlab="Total Number of Steps", col="grey")
 ```
 
-![](PA1_template_files/figure-html/histTotalSteps-1.png)<!-- -->
+![](figures/histTotalSteps-1.png)<!-- -->
 
 Let's look at the mean and median number of steps taken each day. In order to have sensible results, NAs will be removed.
 
@@ -133,7 +133,7 @@ abline(v=names(aveInterval)[which.max(aveInterval)], col="red", lty="dotted", lw
 text(x = names(aveInterval)[which.max(aveInterval)-7], y = 20, "08:35", srt = 90, col = "red")
 ```
 
-![](PA1_template_files/figure-html/averageStepsPerInterval-1.png)<!-- -->
+![](figures/averageStepsPerInterval-1.png)<!-- -->
 
 ```r
 names(aveInterval)[which.max(aveInterval)]
@@ -223,7 +223,7 @@ hist(totalSteps, xlab="Total Number of Steps", main=NA, border="black", add=TRUE
 title("Total Number of Steps per Day", line = 2)
 ```
 
-![](PA1_template_files/figure-html/histTotalStepsImputed-1.png)<!-- -->
+![](figures/histTotalStepsImputed-1.png)<!-- -->
 
 ## Are there differences in activity patterns between weekdays and weekends?
 Let's create a new column in the imputed dataset with two levels - "weekday" and "weekend" indicating whether a given day is a weekday or weekend day.
@@ -279,6 +279,6 @@ xyplot(ave.steps~interval | week, data = aveIntervalWD,
      scales=list(x=list(at = seq(0, 2400, by = 600), labels = c("00:00","06:00","12:00","18:00","24:00"))))
 ```
 
-![](PA1_template_files/figure-html/averageStepsPerIntervalWD-1.png)<!-- -->
+![](figures/averageStepsPerIntervalWD-1.png)<!-- -->
 
 There are apparently some differences in activity patterns between weekdays and weekends. Considering most people are going to school or work around 8:30-9:00 AM during weekdays, it's not surprising to see that the maximum number of total steps was taken around this time. However, during weekends, people can go for a walk at any time in a day so we have a more homogenous distribution for weekends.
